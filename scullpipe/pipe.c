@@ -13,7 +13,7 @@
  * we cannot take responsibility for errors or fitness for use.
  *
  */
- 
+
 #include <linux/sched.h>
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -132,23 +132,20 @@ static ssize_t scull_p_read(struct file *filp, char __user *buf, size_t count, l
 			return -ERESTARTSYS;
 	}
 	/* ok, data is there, return something */
-	if (dev->wp > dev->rp)
-		count = min(count, (size_t)(dev->wp - dev->rp));
-	else /* the write pointer has wrapped, return data up to dev->end */
-		count = min(count, (size_t)(dev->end - dev->rp));
-	if (copy_to_user(buf, dev->rp, count)) {
+
+	if (copy_to_user(buf, dev->rp, SIZE_OF_ITEM)) {
 		up (&dev->sem);
 		return -EFAULT;
 	}
-	dev->rp += count;
+	dev->rp += SIZE_OF_ITEM;
 	if (dev->rp == dev->end)
 		dev->rp = dev->buffer; /* wrapped */
 	up (&dev->sem);
 
 	/* finally, awake any writers and return */
 	wake_up_interruptible(&dev->outq);
-	PDEBUG("\"%s\" did read %li bytes\n",current->comm, (long)count);
-	return count;
+	PDEBUG("\"%s\" did read %li bytes\n",current->comm, (long)SIZE_OF_ITEM);
+	return SIZE_OF_ITEM;
 }
 
 /* Wait for space for writing; caller must hold device semaphore.  On
@@ -157,7 +154,7 @@ static int scull_getwritespace(struct scull_pipe *dev, struct file *filp)
 {
 	while (spacefree(dev) == 0) { /* full */
 		DEFINE_WAIT(wait);
-		
+
 		up(&dev->sem);
 		if (filp->f_flags & O_NONBLOCK)
 			return -EAGAIN;
@@ -172,7 +169,7 @@ static int scull_getwritespace(struct scull_pipe *dev, struct file *filp)
 			return -ERESTARTSYS;
 	}
 	return 0;
-}	
+}
 
 /* How much space is free? */
 static int spacefree(struct scull_pipe *dev)
@@ -196,17 +193,12 @@ static ssize_t scull_p_write(struct file *filp, const char __user *buf, size_t c
 		return result; /* scull_getwritespace called up(&dev->sem) */
 
 	/* ok, space is there, accept something */
-	count = min(count, (size_t)spacefree(dev));
-	if (dev->wp >= dev->rp)
-		count = min(count, (size_t)(dev->end - dev->wp)); /* to end-of-buf */
-	else /* the write pointer has wrapped, fill up to rp-1 */
-		count = min(count, (size_t)(dev->rp - dev->wp - 1));
-	PDEBUG("Going to accept %li bytes to %p from %p\n", (long)count, dev->wp, buf);
-	if (copy_from_user(dev->wp, buf, count)) {
+
+	if (copy_from_user(dev->wp, buf, SIZE_OF_ITEM)) {
 		up (&dev->sem);
 		return -EFAULT;
 	}
-	dev->wp += count;
+	dev->wp += SIZE_OF_ITEM;
 	if (dev->wp == dev->end)
 		dev->wp = dev->buffer; /* wrapped */
 	PDEBUG("\" (scull_p_write) dev->wp:%p    dev->rp:%p\" \n",dev->wp,dev->rp);
@@ -215,8 +207,8 @@ static ssize_t scull_p_write(struct file *filp, const char __user *buf, size_t c
 	/* finally, awake any reader */
 	wake_up_interruptible(&dev->inq);  /* blocked in read() and select() */
 
-	PDEBUG("\"%s\" did write %li bytes\n",current->comm, (long)count);
-	return count;
+	PDEBUG("\"%s\" did write %li bytes\n",current->comm, (long)SIZE_OF_ITEM);
+	return SIZE_OF_ITEM;
 }
 
 static unsigned int scull_p_poll(struct file *filp, poll_table *wait)
@@ -260,7 +252,7 @@ struct file_operations scull_pipe_fops = {
 static void scull_p_setup_cdev(struct scull_pipe *dev, int index)
 {
 	int err, devno = scull_p_devno + index;
-    
+
 	cdev_init(&dev->cdev, &scull_pipe_fops);
 	dev->cdev.owner = THIS_MODULE;
 	err = cdev_add (&dev->cdev, devno, 1);
