@@ -20,7 +20,7 @@ main(int argc, char* argv[]) {
     char item[32];
     int res = read(scullbuffer, &item, 32);
     // deal with return value
-
+    printf("the result value is %d", res);
     if (res == 0) {
       printf("The buffer is empty and no descriptor is openning for writing\n");
     } else if (res < 0) {

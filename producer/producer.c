@@ -21,7 +21,7 @@ main(int argc, char* argv[]) {
     sprintf(item, "%s%d", "BLACK", i);
 
     int res = write(scullbuffer, item, 32);
-
+    printf("the result value is %d", res);
     // deal with the return value
     if (res == 0) {
       printf("The buffer is full and no descriptor is openning for reading\n");
