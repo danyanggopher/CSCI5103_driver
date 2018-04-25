@@ -124,6 +124,7 @@ static ssize_t scull_p_read(struct file *filp, char __user *buf, size_t count, l
 		up(&dev->sem); /* release the lock */
 		if (filp->f_flags & O_NONBLOCK)
 			return -EAGAIN;
+      PDEBUG("\" nwriters: %p\" \n",dev->nwriters);
     if (dev->nwriters == 0) {
       return 0;
     }
