@@ -1,3 +1,4 @@
+make
 cd scullpipe
 sudo ./scull_unload
 sudo ./scull_load

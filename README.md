@@ -5,10 +5,12 @@ DanYang Wang  wang6132
 ## Instruction
 ### Compiling and installing the scullbuffer devices:
 --------------------------------------------------
-1. Execute Make: <br>
-run command ```make``` in ScullBuffer directory (NOTE: not the scullbuffer subdirectory)
-2. Run Installation: <br>
+1. Run Installation: <br>
 run ```./install.sh```. <br>
+This may ask you for your root password.<br>
+
+2. For Uninstall: <br>
+run ```./uninstall.sh```. <br>
 This may ask you for your root password.<br>
 
 ### Testing the functioning of scullbuffer devices:
