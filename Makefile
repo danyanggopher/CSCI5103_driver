@@ -1,7 +1,7 @@
 dev:
 	$(MAKE) -C producer
 	$(MAKE) -C consumer
-	$(MAKE) -C scullbuffer
+	$(MAKE) -C scullpipe
 
 clean:
 	$(MAKE) -C consumer clean
