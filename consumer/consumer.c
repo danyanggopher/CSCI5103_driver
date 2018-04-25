@@ -1,34 +1,49 @@
+/*
+* consumer.c
+* CSCI 5103 
+* Kah Hin Lai
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/stat.h>
 #include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/wait.h>
-#include <unistd.h>
+#include <dirent.h>
 #include <fcntl.h>
 
-main(int argc, char* argv[]) {
-  int num = 0;
-  sscanf(argv[1], "%d", &num);
+#define ITEM_SIZE 32
 
-  int scullbuffer = open("/dev/scullpipe0", O_RDONLY);
-  sleep(2);
-
-  for (int i = 0; i < num; i++) {
-    // construct item
-    char item[32];
-    int res = read(scullbuffer, &item, 32);
-    // deal with return value
-    printf("the result value is %d\n", res);
-    if (res == 0) {
-      printf("The buffer is empty and no descriptor is openning for writing\n");
-    } else if (res < 0) {
-      printf("Error, cannot read\n");
+int main(int argc, char * argv[]) {
+  if (argc != 3) {
+    printf("Usage: consumer item_num consumer_id");
+    exit(-1);
+  }
+  int item_num = atoi(argv[1]);
+  char* id = argv[2];
+  int scull = open("/dev/scullbuffer0", O_RDONLY);
+  if (scull == -1) {
+		perror("Consumer Scull Open failed: ");
+		exit (-1);
+	}
+  sleep(2); /* delay to wait for other process to complete open*/
+  char buf[ITEM_SIZE];
+  int i, ret;
+  for (i = 1; i <= item_num; i++) {
+    memset(buf, '\0', ITEM_SIZE);
+    ret = read(scull, &buf, ITEM_SIZE);
+    if (ret == 0){
+      fprintf(stderr, "Consumer %s: Buffer is empty and no producers available\n", id);
+      break;
+    } else if (ret == -1) {
+      perror("Reading by consumer failed: \n");
+      break;
     } else {
-      printf("The Item received is %s\n", item);
+      printf("Iteration : %03d, Consumer %s consumed %s\n",i, id, buf);
     }
   }
-
-  close(scullbuffer);
+  printf("Total number of Items read by Consumer %s: %d\n", id, i-1);
+  close(scull);
+  exit(0);
 }
