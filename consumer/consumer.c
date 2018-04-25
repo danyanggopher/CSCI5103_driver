@@ -17,7 +17,7 @@ main(int argc, char* argv[]) {
   for (int i = 0; i < num; i++) {
     // construct item
     char item[32];
-    read(scullbuffer, item, 32);
+    read(scullbuffer, &item, 32);
     printf("The Item received is %s", item);
   }
 
