@@ -127,7 +127,7 @@ static ssize_t scull_p_read(struct file *filp, char __user *buf, size_t count, l
 
 	PDEBUG("\" (scull_p_read) dev->wp:%p    dev->rp:%p\" \n",dev->wp,dev->rp);
 
-	while (count == 0) { /* nothing to read */
+	while (dev->count == 0) { /* nothing to read */
 		up(&dev->sem); /* release the lock */
 		if (filp->f_flags & O_NONBLOCK) {
 			return -EAGAIN;
@@ -181,6 +181,7 @@ static int scull_getwritespace(struct scull_pipe *dev, struct file *filp)
 		if (spacefree(dev) == 0)
 			schedule();
 		finish_wait(&dev->outq, &wait);
+
 		if (signal_pending(current))
 			return -ERESTARTSYS; /* signal: tell the fs layer to handle it */
 		if (down_interruptible(&dev->sem))
