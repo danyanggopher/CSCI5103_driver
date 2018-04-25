@@ -41,6 +41,7 @@ struct scull_pipe {
         int nreaders, nwriters;            /* number of openings for r/w */
         struct semaphore sem;              /* mutual exclusion semaphore */
         struct cdev cdev;                  /* Char device structure */
+        int count;
 };
 
 /* parameters */
@@ -76,10 +77,11 @@ static int scull_p_open(struct inode *inode, struct file *filp)
 			up(&dev->sem);
 			return -ENOMEM;
 		}
+    dev->rp = dev->wp = dev->buffer;
+    dev->count = 0;
 	}
 	dev->buffersize = nitems * SIZE_OF_ITEM;
 	dev->end = dev->buffer + dev->buffersize;
-	dev->rp = dev->wp = dev->buffer; /* rd and wr from the beginning */
 
 	/* use f_mode,not  f_flags: it's cleaner (fs/open.c tells why) */
 	if (filp->f_mode & FMODE_READ)
@@ -120,7 +122,7 @@ static ssize_t scull_p_read(struct file *filp, char __user *buf, size_t count, l
 
 	PDEBUG("\" (scull_p_read) dev->wp:%p    dev->rp:%p\" \n",dev->wp,dev->rp);
 
-	while (dev->rp == dev->wp) { /* nothing to read */
+	while (count == 0) { /* nothing to read */
 		up(&dev->sem); /* release the lock */
 		if (filp->f_flags & O_NONBLOCK) {
 			return -EAGAIN;
@@ -128,9 +130,9 @@ static ssize_t scull_p_read(struct file *filp, char __user *buf, size_t count, l
     if (dev->nwriters == 0) {
       return 0;
     }
-    PDEBUG("\" nwriters: %p\" \n",dev->nwriters);
+
 		PDEBUG("\"%s\" reading: going to sleep\n", current->comm);
-		if (wait_event_interruptible(dev->inq, (dev->rp != dev->wp)))
+		if (wait_event_interruptible(dev->inq, (count != 0)))
 			return -ERESTARTSYS; /* signal: tell the fs layer to handle it */
 		/* otherwise loop, but first reacquire the lock */
 		if (down_interruptible(&dev->sem))
@@ -143,6 +145,7 @@ static ssize_t scull_p_read(struct file *filp, char __user *buf, size_t count, l
 		return -EFAULT;
 	}
 	dev->rp += SIZE_OF_ITEM;
+  dev->count -= 1;
 	if (dev->rp == dev->end)
 		dev->rp = dev->buffer; /* wrapped */
 	up (&dev->sem);
@@ -182,9 +185,7 @@ static int scull_getwritespace(struct scull_pipe *dev, struct file *filp)
 /* How much space is free? */
 static int spacefree(struct scull_pipe *dev)
 {
-	if (dev->rp == dev->wp)
-		return dev->buffersize - 1;
-	return ((dev->rp + dev->buffersize - dev->wp) % dev->buffersize) - 1;
+	return nitems - dev->count;
 }
 
 static ssize_t scull_p_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos)
@@ -207,6 +208,7 @@ static ssize_t scull_p_write(struct file *filp, const char __user *buf, size_t c
 		return -EFAULT;
 	}
 	dev->wp += SIZE_OF_ITEM;
+  dev->count += 1;
 	if (dev->wp == dev->end)
 		dev->wp = dev->buffer; /* wrapped */
 	PDEBUG("\" (scull_p_write) dev->wp:%p    dev->rp:%p\" \n",dev->wp,dev->rp);
