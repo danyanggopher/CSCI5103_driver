@@ -21,5 +21,6 @@ main(int argc, char* argv[]) {
     printf("The Item received is %s", item);
   }
 
+  sleep(3);
   close(scullbuffer);
 }

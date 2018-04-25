@@ -23,5 +23,6 @@ main(int argc, char* argv[]) {
     write(scullbuffer, item, 32);
   }
 
+  sleep(3);
   close(scullbuffer);
 }
