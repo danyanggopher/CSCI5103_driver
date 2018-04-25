@@ -1,7 +1,7 @@
 # ScullBuffer
 Team Member:
 Kah Hin Lai   laixx330
-DanYang Wang  
+DanYang Wang  wang6132
 ## Instruction
 ### Compiling and installing the scullbuffer devices:
 --------------------------------------------------
