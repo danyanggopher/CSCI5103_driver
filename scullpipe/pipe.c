@@ -124,6 +124,9 @@ static ssize_t scull_p_read(struct file *filp, char __user *buf, size_t count, l
 		up(&dev->sem); /* release the lock */
 		if (filp->f_flags & O_NONBLOCK)
 			return -EAGAIN;
+    if (dev->nwriters == 0) {
+      return 0;
+    }
 		PDEBUG("\"%s\" reading: going to sleep\n", current->comm);
 		if (wait_event_interruptible(dev->inq, (dev->rp != dev->wp)))
 			return -ERESTARTSYS; /* signal: tell the fs layer to handle it */
@@ -158,6 +161,9 @@ static int scull_getwritespace(struct scull_pipe *dev, struct file *filp)
 		up(&dev->sem);
 		if (filp->f_flags & O_NONBLOCK)
 			return -EAGAIN;
+    if (dev->nreaders == 0) {
+      return 0;
+    }
 		PDEBUG("\"%s\" writing: going to sleep\n",current->comm);
 		prepare_to_wait(&dev->outq, &wait, TASK_INTERRUPTIBLE);
 		if (spacefree(dev) == 0)
@@ -168,7 +174,7 @@ static int scull_getwritespace(struct scull_pipe *dev, struct file *filp)
 		if (down_interruptible(&dev->sem))
 			return -ERESTARTSYS;
 	}
-	return 0;
+	return 1;
 }
 
 /* How much space is free? */
@@ -189,7 +195,7 @@ static ssize_t scull_p_write(struct file *filp, const char __user *buf, size_t c
 
 	/* Make sure there's space to write */
 	result = scull_getwritespace(dev, filp);
-	if (result)
+	if (result != 1)
 		return result; /* scull_getwritespace called up(&dev->sem) */
 
 	/* ok, space is there, accept something */

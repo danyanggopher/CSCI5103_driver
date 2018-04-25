@@ -13,16 +13,24 @@ main(int argc, char* argv[]) {
   sscanf(argv[1], "%d", &num);
 
   int scullbuffer = open("/dev/scullpipe0", O_WRONLY);
+  sleep(2);
 
   for (int i = 0; i < num; i++) {
     // construct item
     char item[32];
     sprintf(item, "%s%d", "BLACK", i);
-    printf("Deposit one BLACK into buffer\n");
 
-    write(scullbuffer, item, 32);
+    int res = write(scullbuffer, item, 32);
+
+    // deal with the return value
+    if (res == 0) {
+      printf("The buffer is full and no descriptor is openning for reading\n");
+    } else if (res < 0) {
+      printf("Error, cannot write\n");
+    } else {
+      printf("%s Deposited\n", item);
+    }
   }
 
-  sleep(3);
   close(scullbuffer);
 }
