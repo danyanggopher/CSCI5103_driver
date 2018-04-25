@@ -125,10 +125,10 @@ static ssize_t scull_p_read(struct file *filp, char __user *buf, size_t count, l
 		if (filp->f_flags & O_NONBLOCK) {
 			return -EAGAIN;
     }
-    PDEBUG("\" nwriters: %p\" \n",dev->nwriters);
     if (dev->nwriters == 0) {
       return 0;
     }
+    PDEBUG("\" nwriters: %p\" \n",dev->nwriters);
 		PDEBUG("\"%s\" reading: going to sleep\n", current->comm);
 		if (wait_event_interruptible(dev->inq, (dev->rp != dev->wp)))
 			return -ERESTARTSYS; /* signal: tell the fs layer to handle it */
