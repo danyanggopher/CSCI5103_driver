@@ -22,7 +22,7 @@ int main(int argc, char * argv[]) {
   }
   int item_num = atoi(argv[1]);
   char* id = argv[2];
-  int scull = open("/dev/scullbuffer0", O_RDONLY);
+  int scull = open("/dev/scullpipe0", O_RDONLY);
   if (scull == -1) {
 		perror("Consumer Scull Open failed: ");
 		exit (-1);

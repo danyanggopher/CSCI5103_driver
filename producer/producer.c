@@ -25,7 +25,7 @@ int main(int argc, char * argv[]) {
   struct timeval tv;
   int item_num = atoi(argv[1]);
   char* color = argv[2];
-  int scull = open("/dev/scullbuffer0", O_WRONLY);
+  int scull = open("/dev/scullpipe0", O_WRONLY);
 	if (scull == -1) {
 		perror("Producer Scull Open failed: ");
     exit(-1);
