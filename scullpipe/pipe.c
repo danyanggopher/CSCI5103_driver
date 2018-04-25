@@ -102,10 +102,15 @@ static int scull_p_release(struct inode *inode, struct file *filp)
 		dev->nreaders--;
 	if (filp->f_mode & FMODE_WRITE)
 		dev->nwriters--;
+
 	if (dev->nreaders + dev->nwriters == 0) {
 		kfree(dev->buffer);
 		dev->buffer = NULL; /* the other fields are not checked on open */
-	}
+	} else if (dev->nreaders == 0) {
+    wake_up_interruptible(&dev->outq);
+  } else if (dev->nwriters == 0) {
+    wake_up_interruptible(&dev->inq);
+  }
 	up(&dev->sem);
 	return 0;
 }
@@ -164,8 +169,10 @@ static int scull_getwritespace(struct scull_pipe *dev, struct file *filp)
 		DEFINE_WAIT(wait);
 
 		up(&dev->sem);
-		if (filp->f_flags & O_NONBLOCK)
+		if (filp->f_flags & O_NONBLOCK) {
 			return -EAGAIN;
+    }
+
     if (dev->nreaders == 0) {
       return 0;
     }
